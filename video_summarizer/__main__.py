@@ -31,7 +31,8 @@ def main():
     parser.add_argument("--url", type=str, help="视频链接（单次处理模式）")
     parser.add_argument("--model", type=str, default=None, help="指定模型提供商")
     parser.add_argument("--port", type=int, default=8020, help="Web 端口（默认 8020）")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Web 主机地址")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Web 主机地址（Windows 访问需要设 0.0.0.0）")
+    parser.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
     parser.add_argument("--output-dir", type=str, default=None,
                         help="历史记录保存目录（默认 ~/.video-summarizer/history）")
 
@@ -87,7 +88,7 @@ def main():
     # Web UI 模式（默认）
     from video_summarizer.web.app import run
     print("🚀 启动 Web UI...")
-    run(host=args.host, port=args.port)
+    run(host=args.host, port=args.port, no_browser=args.no_browser)
 
 
 if __name__ == "__main__":

@@ -419,12 +419,35 @@ async def api_shutdown():
 # ============ 启动 ============
 
 
-def run(host: str = "127.0.0.1", port: int = 8020):
+def run(host: str = "0.0.0.0", port: int = 8020, no_browser: bool = False):
     """启动 Web 服务"""
+    import os, socket
     config = load_config()
+
+    # 检测 WSL IP（用于告知用户 Windows 浏览器访问地址）
+    wsl_ip = "?"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        wsl_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
     print(f"\n  🎬 Video Summarizer Web UI")
     print(f"  ─────────────────────────")
-    print(f"  http://{host}:{port}")
+    # 显示 WSL 内访问地址
+    print(f"  WSL 内地址:  http://127.0.0.1:{port}")
+    if wsl_ip != "?":
+        print(f"  Windows 访问: http://{wsl_ip}:{port}")
     print(f"  ─────────────────────────")
+    # 检测代理环境
+    http_proxy = os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY")
+    if http_proxy:
+        print(f"  ⚠  检测到系统代理: {http_proxy}")
+        print(f"  ⚠  请在代理软件中设置绕过 localhost,127.*,172.*")
+    print(f"  ─────────────────────────")
+    print(f"  在 Windows 浏览器里打开上面的「Windows 访问」地址")
     print(f"  按 Ctrl+C 停止服务\n")
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
