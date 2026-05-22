@@ -11,6 +11,10 @@ on:
         required: true
         type: string
 
+# 给 GITHUB_TOKEN 写入 Releases 的权限
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
