@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统状态 — Video Summarizer</title>
+    <style>
+        :root {
+            --bg: #0f0f13; --surface: #1a1a24; --surface2: #252535;
+            --border: #2e2e42; --text: #e4e4ec; --text-dim: #8888a0;
+            --accent: #6c6cf0; --success: #34d399; --warning: #fbbf24; --error: #f87171;
+            --radius: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+        }
+        .container { max-width: 780px; margin: 0 auto; padding: 32px 20px; }
+        .header { margin-bottom: 32px; }
+        .header h1 { font-size: 24px; font-weight: 600; color: var(--text); }
+        .header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+        .header nav { margin-top: 12px; display: flex; gap: 12px; }
+        .header nav a {
+            color: var(--text-dim); text-decoration: none; font-size: 13px;
+            padding: 4px 12px; border-radius: 6px; transition: 0.2s;
+        }
+        .header nav a:hover, .header nav a.active { color: var(--text); background: var(--surface2); }
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 14px; font-weight: 500; color: var(--text-dim);
+            margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .info-row {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--text-dim); min-width: 120px; }
+        .info-value { color: var(--text); text-align: right; word-break: break-all; max-width: 70%; }
+        .info-value code {
+            background: var(--bg); padding: 2px 8px; border-radius: 4px;
+            font-size: 13px; color: var(--accent);
+        }
+        .badge {
+            display: inline-block; padding: 2px 10px; border-radius: 10px;
+            font-size: 12px; font-weight: 500;
+        }
+        .badge-ok { background: rgba(52,211,153,0.15); color: var(--success); }
+        .badge-warn { background: rgba(251,191,36,0.15); color: var(--warning); }
+        .danger {
+            padding: 12px 16px; border-radius: 8px; margin-top: 12px;
+            background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2);
+            color: var(--error); font-size: 13px; line-height: 1.6;
+        }
+        .tip {
+            padding: 10px 14px; border-radius: 8px; margin-top: 8px;
+            background: rgba(108,108,240,0.1); border: 1px solid rgba(108,108,240,0.2);
+            color: var(--accent); font-size: 13px; line-height: 1.6;
+        }
+        .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 48px; }
+        @media (max-width: 600px) {
+            .info-row { flex-direction: column; gap: 4px; }
+            .info-value { text-align: left; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 系统状态</h1>
+            <p>所有文件路径、配置和存储信息一览</p>
+            <nav>
+                <a href="/">首页</a>
+                <a href="/config">配置</a>
+                <a href="/status" class="active">系统状态</a>
+            </nav>
+        </div>
+
+        <div id="statusContent">
+            <div class="card">
+                <div class="card-title">⏳ 加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const s = await res.json();
+                render(s);
+            } catch (e) {
+                document.getElementById('statusContent').innerHTML = `
+                    <div class="card"><div class="card-title">❌ 加载失败</div><p style="color:var(--error);">${e.message}</p></div>
+                `;
+            }
+        }
+
+        function render(s) {
+            const container = document.getElementById('statusContent');
+
+            // 配置状态
+            const apiStatus = s.has_api_key
+                ? '<span class="badge badge-ok">✅ 已配置</span>'
+                : '<span class="badge badge-warn">⚠ 未配置</span>';
+
+            let html = `
+            <div class="card">
+                <div class="card-title">⚙️ 当前配置</div>
+                <div class="info-row">
+                    <span class="info-label">AI 提供商</span>
+                    <span class="info-value">${s.provider} / ${s.model}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">API Key</span>
+                    <span class="info-value">${apiStatus}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">API 地址</span>
+                    <span class="info-value"><code>${s.api_base}</code></span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📂 文件存储位置</div>
+                <div class="info-row">
+                    <span class="info-label">配置文件</span>
+                    <span class="info-value"><code>${s.config_file}</code></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">视频缓存</span>
+                    <span class="info-value"><code>${s.cache_dir}</code></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">缓存大小</span>
+                    <span class="info-value">${s.cache_files} 个文件 (${(s.cache_size_bytes / 1024).toFixed(1)}KB)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">历史记录</span>
+                    <span class="info-value"><code>${s.history_dir}</code></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">已保存记录</span>
+                    <span class="info-value">${s.history_files} 个 .md 文件</span>
+                </div>
+            </div>`;
+
+            // API Key 安全说明
+            const keyWarning = s.has_api_key ? `
+            <div class="card">
+                <div class="card-title">🔐 API Key 安全</div>
+                <div class="danger">
+                    ⚠ API Key 以明文保存在配置文件中。<br>
+                    请不要把这个文件分享给他人，也不要上传到 GitHub。
+                </div>
+                <div class="tip">
+                    💡 配置文件路径: <code>${s.config_file}</code><br>
+                    💡 删除 API Key: 打开该文件，删除对应行，或到配置页清空 Key 后保存<br>
+                    💡 API Key 只存本地，不会上传到任何服务器
+                </div>
+            </div>` : '';
+
+            // 缓存说明
+            const cacheSize = (s.cache_size_bytes / 1024).toFixed(1);
+            html += keyWarning + `
+            <div class="card">
+                <div class="card-title">🧹 缓存说明</div>
+                <div class="info-row">
+                    <span class="info-label">缓存内容</span>
+                    <span class="info-value">已处理视频的字幕文本（不含音频/视频文件）</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">当前大小</span>
+                    <span class="info-value">${cacheSize}KB (${s.cache_files} 个视频)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">清除缓存</span>
+                    <span class="info-value">到 <a href="/config" style="color:var(--accent);">配置页</a> 点"清空缓存"</span>
+                </div>
+                <div class="tip">
+                    💡 缓存的是字幕文本（JSON），不是视频文件。<br>
+                    💡 清空缓存后，再次处理同一视频会重新下载/识别。<br>
+                    💡 音频文件在处理完后自动删除，不占用磁盘。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔌 停止服务</div>
+                <div class="info-row">
+                    <span class="info-label">方法一</span>
+                    <span class="info-value">在终端按 <code>Ctrl+C</code></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">方法二</span>
+                    <span class="info-value">直接关闭终端窗口</span>
+                </div>
+                <div class="tip">
+                    💡 停止服务不影响已保存的历史记录。<br>
+                    💡 下次启动时运行 <code>video-summarizer</code> 即可恢复。
+                </div>
+            </div>`;
+
+            container.innerHTML = html;
+        }
+
+        loadStatus();
+    </script>
+</body>
+</html>

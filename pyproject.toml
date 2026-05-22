@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-summarizer"
+version = "0.2.0"
+description = "🎬 视频内容总结工具 — 输入B站/抖音链接，自动提取字幕+AI总结"
+readme = "README.md"
+authors = [
+    {name = "lyrumu"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.10"
+keywords = ["bilibili", "douyin", "video", "summary", "whisper", "ai"]
+
+dependencies = [
+    "requests>=2.25.0",
+    "openai>=1.0.0",
+    "rich>=13.0.0",
+    "yt-dlp>=2024.0.0",
+    "faster-whisper>=1.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "jinja2>=3.1.0",
+    "httpx>=0.25.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/lyrumu/video-summarizer"
+Repository = "https://github.com/lyrumu/video-summarizer"
+
+[project.scripts]
+video-summarizer = "video_summarizer.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["video_summarizer*"]
+
+[tool.setuptools.package-data]
+"video_summarizer" = ["web/templates/*.html"]
+
+[tool.setuptools]
+include-package-data = true

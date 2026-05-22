@@ -1,0 +1,1 @@
+include video_summarizer/web/templates/*.html

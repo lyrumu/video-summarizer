@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置 — Video Summarizer</title>
+    <style>
+        :root {
+            --bg: #0f0f13; --surface: #1a1a24; --surface2: #252535;
+            --border: #2e2e42; --text: #e4e4ec; --text-dim: #8888a0;
+            --accent: #6c6cf0; --accent-hover: #8080ff;
+            --success: #34d399; --error: #f87171; --radius: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+        }
+        .container { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+        .header { margin-bottom: 32px; }
+        .header h1 { font-size: 24px; font-weight: 600; color: var(--text); }
+        .header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+        .header nav { margin-top: 12px; display: flex; gap: 12px; }
+        .header nav a {
+            color: var(--text-dim); text-decoration: none; font-size: 13px;
+            padding: 4px 12px; border-radius: 6px; transition: 0.2s;
+        }
+        .header nav a:hover, .header nav a.active {
+            color: var(--text); background: var(--surface2);
+        }
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 14px; font-weight: 500; color: var(--text-dim);
+            margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 13px; color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .form-group select, .form-group input {
+            width: 100%; padding: 10px 14px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); font-size: 14px;
+            outline: none; transition: 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus {
+            border-color: var(--accent);
+        }
+        .form-group input::placeholder { color: var(--text-dim); }
+        .form-hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .btn {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary { background: var(--surface2); color: var(--text); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-danger { background: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+        .btn-danger:hover { background: #991b1b; color: #fecaca; }
+        .btn-success { background: var(--success); color: #0f0f13; }
+        .btn-group { display: flex; gap: 8px; margin-top: 8px; }
+        .toast {
+            display: none; padding: 10px 16px; border-radius: 8px;
+            font-size: 13px; margin-top: 12px;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: rgba(52,211,153,0.1); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
+        .toast.error { background: rgba(248,113,113,0.1); color: var(--error); border: 1px solid rgba(248,113,113,0.2); }
+        .api-key-warning {
+            padding: 8px 12px; border-radius: 6px;
+            background: rgba(251,191,36,0.1); color: var(--warning);
+            font-size: 12px; margin-bottom: 12px;
+        }
+        .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 48px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ 配置</h1>
+            <p>管理 AI 模型和 API Key</p>
+            <nav>
+                <a href="/">首页</a>
+                <a href="/config" class="active">配置</a>
+                <a href="/status">系统状态</a>
+            </nav>
+        </div>
+
+        <div class="card">
+            <div class="card-title">AI 模型</div>
+
+            <div class="form-group">
+                <label for="provider">提供商</label>
+                <select id="provider" onchange="onProviderChange()">
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="glm">GLM (智谱)</option>
+                    <option value="qwen">Qwen (通义千问)</option>
+                    <option value="ollama">Ollama (本地免费)</option>
+                </select>
+                <div class="form-hint">选择 AI 模型提供商。Ollama 是本地模型，完全免费。</div>
+                <div id="ollamaHint" style="display:none; margin-top:4px; padding:8px 12px; border-radius:6px; background:rgba(251,191,36,0.1); color:var(--warning); font-size:12px; line-height:1.6;">
+                    ⚠ 使用 Ollama 前请先启动服务：
+                    <code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--text);">ollama serve</code>
+                    或在 Windows 系统托盘中确认 Ollama 正在运行。<br>
+                    然后下载模型：<code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--text);">ollama pull deepseek-r1:8b</code>
+                </div>
+            </div>
+
+            <div class="form-group" id="apiKeyGroup">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="输入 API Key">
+                <div class="form-hint" id="apiKeyHint">
+                    DeepSeek: 在 platform.deepseek.com 获取
+                </div>
+                <div class="api-key-warning" id="apiKeyWarning" style="display:none;">
+                    ⚠ 当前未设置 API Key，无法使用此提供商
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="model">模型</label>
+                <div style="display:flex; gap:6px;">
+                    <select id="model" style="flex:1;" onchange="onModelSelect()">
+                    </select>
+                    <input type="text" id="customModel" placeholder="或输入模型名" style="display:none; flex:1; padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; outline:none;">
+                    <button class="btn btn-secondary" onclick="fetchModels()" style="font-size:12px; padding:8px 12px; white-space:nowrap;" title="从 API 拉取最新模型列表">🔄 刷新</button>
+                </div>
+                <div class="form-hint" id="modelHint"></div>
+                <div id="fetchStatus" style="font-size:12px; color:var(--text-dim); margin-top:4px;"></div>
+            </div>
+
+            <div class="form-group" id="apiBaseGroup" style="display:none;">
+                <label for="apiBase">API 地址 (自定义)</label>
+                <input type="text" id="apiBase" placeholder="https://...">
+                <div class="form-hint">一般不需要修改</div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+                <button class="btn btn-secondary" onclick="testConnection()">测试连接</button>
+            </div>
+            <div class="toast" id="toast"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">缓存管理</div>
+            <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
+                缓存已处理的字幕文本，避免重复下载。
+            </p>
+            <button class="btn btn-secondary" onclick="clearCache()">清空缓存</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔑 API Key 管理</div>
+            <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
+                一键清除当前保存的 API Key，下次使用任何云端模型时需要重新输入。
+            </p>
+            <button class="btn btn-danger" onclick="clearApiKey()">清除 API Key</button>
+        </div>
+
+        <div class="footer">
+            Video Summarizer · API Key 仅保存在本地 ~/.video-summarizer/config.json
+        </div>
+    </div>
+
+    <script>
+        const MODELS = {
+            'deepseek': {
+                models: [
+                    {id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', cost: '¥1/1M tokens', hint: '最新V4系列，速度快，性价比高'},
+                    {id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', cost: '¥3/1M tokens', hint: 'V4旗舰版，更强推理能力'},
+                    {id: 'deepseek-chat', name: 'DeepSeek V3 (旧)', cost: '¥1/1M tokens', hint: '上一代模型'},
+                    {id: 'deepseek-reasoner', name: 'DeepSeek R1', cost: '¥4/1M tokens', hint: '推理模型'},
+                ],
+                keyHint: 'DeepSeek: 在 platform.deepseek.com 获取',
+                apiBase: 'https://api.deepseek.com',
+                needKey: true,
+            },
+            'glm': {
+                models: [
+                    {id: 'glm-4-flash', name: 'GLM-4-Flash (免费)', cost: '免费', hint: '免费模型，推荐'},
+                    {id: 'glm-4-plus', name: 'GLM-4-Plus', cost: '¥5/1M tokens', hint: '付费模型，更强'}
+                ],
+                keyHint: 'GLM: 在 open.bigmodel.cn 获取',
+                apiBase: 'https://open.bigmodel.cn/api/paas/v4',
+                needKey: true,
+            },
+            'qwen': {
+                models: [
+                    {id: 'qwen-turbo', name: 'Qwen Turbo', cost: '¥0.3/1M tokens', hint: '经济实惠'},
+                    {id: 'qwen-plus', name: 'Qwen Plus', cost: '¥0.8/1M tokens', hint: '性价比之选'},
+                    {id: 'qwen-max', name: 'Qwen Max', cost: '¥2/1M tokens', hint: '最强模型'}
+                ],
+                keyHint: 'Qwen: 在 dashscope.aliyuncs.com 获取',
+                apiBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                needKey: true,
+            },
+            'ollama': {
+                models: [
+                    {id: 'deepseek-r1:7b', name: 'DeepSeek R1 7B (本地)', cost: '免费', hint: 'DeepSeek R1蒸馏版，推理强'},
+                    {id: 'deepseek-r1:8b', name: 'DeepSeek R1 8B (本地)', cost: '免费', hint: '推理能力强，需要5GB+磁盘空间'},
+                    {id: 'deepseek-r1:14b', name: 'DeepSeek R1 14B (本地)', cost: '免费', hint: '更强推理，需要8GB+内存'},
+                    {id: 'deepseek-r1:32b', name: 'DeepSeek R1 32B (本地)', cost: '免费', hint: '最强本地推理，需要24GB+内存'},
+                    {id: 'deepseek-coder:6.7b', name: 'DeepSeek Coder 6.7B (本地)', cost: '免费', hint: '代码能力强的通用模型'},
+                    {id: 'qwen2.5:7b', name: 'Qwen 2.5 7B (本地)', cost: '免费', hint: '默认，7B参数，平衡速度与质量'},
+                    {id: 'qwen2.5:14b', name: 'Qwen 2.5 14B (本地)', cost: '免费', hint: '更强，需要更多内存'},
+                    {id: 'qwen2.5:32b', name: 'Qwen 2.5 32B (本地)', cost: '免费', hint: '高质量，需要24GB+内存'},
+                    {id: 'llama3.2:3b', name: 'LLaMA 3.2 3B (本地)', cost: '免费', hint: '轻量快速'},
+                    {id: 'llama3.2:7b', name: 'LLaMA 3.2 7B (本地)', cost: '免费', hint: 'Meta最新，均衡'},
+                    {id: 'llama3.1:8b', name: 'LLaMA 3.1 8B (本地)', cost: '免费', hint: '稳定可靠'},
+                ],
+                keyHint: '安装 Ollama 后在终端运行: ollama pull <模型名>，如 ollama pull deepseek-r1:7b',
+                apiBase: 'http://localhost:11434/v1',
+                needKey: false,
+            },
+        };
+
+        let _lastApiKeys = {};
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const cfg = await res.json();
+                _lastApiKeys = cfg.api_keys || {};
+                document.getElementById('provider').value = cfg.provider || 'ollama';
+                if (cfg.api_key) {
+                    document.getElementById('apiKey').value = cfg.api_key;
+                }
+                document.getElementById('apiBase').value = cfg.api_base || '';
+                onProviderChange();
+                if (cfg.model) {
+                    document.getElementById('model').value = cfg.model;
+                }
+            } catch (e) {
+                console.error('加载配置失败:', e);
+            }
+        }
+
+        function onProviderChange() {
+            const provider = document.getElementById('provider').value;
+            const info = MODELS[provider];
+            if (!info) return;
+
+            // 更新模型列表（追加"自定义"选项）
+            const modelSelect = document.getElementById('model');
+            modelSelect.innerHTML = info.models.map(m =>
+                `<option value="${m.id}">${m.name} (${m.cost})</option>`
+            ).join('') + `<option value="__custom__">✏️ 自定义模型名...</option>`;
+
+            // 更新提示
+            document.getElementById('apiKeyHint').textContent = info.keyHint;
+            document.getElementById('modelHint').textContent = info.models[0]?.hint || '';
+            document.getElementById('fetchStatus').textContent = '';
+
+            // 恢复 select 显示，隐藏自定义输入
+            document.getElementById('model').style.display = '';
+            document.getElementById('customModel').style.display = 'none';
+
+            // API Key 显示/隐藏 — 切换提供商时自动填入该提供商保存的 Key
+            const apiKeyGroup = document.getElementById('apiKeyGroup');
+            const apiKeyInput = document.getElementById('apiKey');
+            const warning = document.getElementById('apiKeyWarning');
+            const ollamaHint = document.getElementById('ollamaHint');
+            if (info.needKey) {
+                apiKeyGroup.style.display = 'block';
+                // 从 per-provider 字典中查找该提供商的 Key
+                const savedKey = _lastApiKeys[provider];
+                if (savedKey) {
+                    apiKeyInput.value = savedKey;
+                } else {
+                    apiKeyInput.value = '';  // 切换到一个没有 Key 的提供商，清空输入框
+                }
+                warning.style.display = !apiKeyInput.value ? 'block' : 'none';
+                ollamaHint.style.display = 'none';
+            } else {
+                apiKeyGroup.style.display = 'none';
+                warning.style.display = 'none';
+                ollamaHint.style.display = 'block';
+            }
+
+            // API Base
+            document.getElementById('apiBase').value = info.apiBase;
+
+            // 模型选择变化时更新提示
+            modelSelect.onchange = () => {
+                if (modelSelect.value === '__custom__') {
+                    document.getElementById('model').style.display = 'none';
+                    document.getElementById('customModel').style.display = '';
+                    document.getElementById('customModel').focus();
+                    document.getElementById('modelHint').textContent = '输入任意模型名称';
+                } else {
+                    const m = info.models.find(m => m.id === modelSelect.value);
+                    if (m) document.getElementById('modelHint').textContent = m.hint;
+                }
+            };
+        }
+
+        function onModelSelect() {
+            const select = document.getElementById('model');
+            if (select.value === '__custom__') {
+                document.getElementById('model').style.display = 'none';
+                document.getElementById('customModel').style.display = '';
+                document.getElementById('customModel').focus();
+                document.getElementById('modelHint').textContent = '输入任意模型名称';
+            }
+        }
+
+        async function fetchModels() {
+            const provider = document.getElementById('provider').value;
+            if (provider === 'ollama') {
+                document.getElementById('fetchStatus').textContent = 'Ollama 不需要拉取，直接选即可';
+                return;
+            }
+
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                document.getElementById('fetchStatus').textContent = '⚠ 请先输入 API Key';
+                return;
+            }
+
+            document.getElementById('fetchStatus').textContent = '⏳ 正在拉取...';
+
+            try {
+                const res = await fetch(`/api/models/live/${provider}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({api_key: apiKey}),
+                });
+                const data = await res.json();
+
+                const select = document.getElementById('model');
+                if (data.models && data.models.length > 0) {
+                    select.innerHTML = data.models.map(m =>
+                        `<option value="${m.id}">${m.name || m.id}</option>`
+                    ).join('') + `<option value="__custom__">✏️ 自定义模型名...</option>`;
+                    document.getElementById('fetchStatus').textContent = `✅ 获取到 ${data.models.length} 个模型`;
+                    document.getElementById('modelHint').textContent = '从 API 实时拉取';
+                } else {
+                    document.getElementById('fetchStatus').textContent = `⚠ 获取失败: ${data.error || '未知'}`;
+                }
+            } catch (e) {
+                document.getElementById('fetchStatus').textContent = `⚠ 请求失败: ${e.message}`;
+            }
+        }
+
+        async function saveConfig() {
+            // 如果选了"自定义"，用输入框的值
+            const modelSelect = document.getElementById('model');
+            const customInput = document.getElementById('customModel');
+            const model = modelSelect.value === '__custom__'
+                ? customInput.value.trim()
+                : modelSelect.value;
+
+            const config = {
+                provider: document.getElementById('provider').value,
+                api_key: document.getElementById('apiKey').value,
+                model: model || modelSelect.value,
+                api_base: document.getElementById('apiBase').value,
+            };
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config),
+                });
+                if (res.ok) {
+                    showToast('✅ 配置已保存', 'success');
+                } else {
+                    showToast('❌ 保存失败', 'error');
+                }
+            } catch (e) {
+                showToast('❌ 保存失败: ' + e.message, 'error');
+            }
+        }
+
+        async function testConnection() {
+            const provider = document.getElementById('provider').value;
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const apiBase = document.getElementById('apiBase').value.trim();
+            const model = document.getElementById('model').value === '__custom__'
+                ? document.getElementById('customModel').value.trim()
+                : document.getElementById('model').value;
+
+            if (provider === 'ollama') {
+                try {
+                    const res = await fetch(apiBase.replace('/v1', '') + '/api/tags');
+                    const data = await res.json();
+                    const models = (data.models || []).map(m => m.name);
+                    if (models.length > 0) {
+                        showToast(`✅ Ollama 连接成功！已安装: ${models.join(', ')}`, 'success');
+                    } else {
+                        showToast('✅ Ollama 运行中，但未安装模型。运行: ollama pull <模型名>', 'success');
+                    }
+                } catch (e) {
+                    showToast('❌ Ollama 连接失败，请确认 Ollama 正在运行', 'error');
+                }
+                return;
+            }
+
+            if (!apiKey) {
+                showToast('⚠ 请先输入 API Key', 'error');
+                return;
+            }
+
+            showToast('⏳ 测试中...', 'success');
+            try {
+                const res = await fetch('/api/test-connection', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({provider, api_key: apiKey, api_base: apiBase, model}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`✅ 连接成功！模型: ${data.model}，响应: ${data.response}`, 'success');
+                } else {
+                    showToast(`❌ 连接失败: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showToast(`❌ 请求失败: ${e.message}`, 'error');
+            }
+        }
+
+        async function clearCache() {
+            try {
+                const res = await fetch('/api/clear-cache', {method: 'POST'});
+                if (res.ok) {
+                    showToast('✅ 缓存已清空', 'success');
+                }
+            } catch (e) {
+                showToast('❌ 清空失败: ' + e.message, 'error');
+            }
+        }
+
+        async function clearApiKey() {
+            if (!confirm('⚠ 确定要清除所有保存的 API Key 吗？\n之后使用任何云端模型都需要重新输入 Key。')) return;
+            try {
+                const res = await fetch('/api/clear-key', {method: 'POST'});
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('apiKey').value = '';
+                    _lastApiKeys = {};
+                    showToast('✅ ' + data.message, 'success');
+                    // 刷新警告状态
+                    const warning = document.getElementById('apiKeyWarning');
+                    if (warning) warning.style.display = 'block';
+                } else {
+                    showToast('❌ 清除失败', 'error');
+                }
+            } catch (e) {
+                showToast('❌ 清除失败: ' + e.message, 'error');
+            }
+        }
+
+        function showToast(msg, type) {
+            const el = document.getElementById('toast');
+            el.className = 'toast show ' + type;
+            el.textContent = msg;
+            setTimeout(() => el.className = 'toast', 3000);
+        }
+
+        // 从 URL 参数中检测 provider
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('provider')) {
+            document.getElementById('provider').value = params.get('provider');
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>

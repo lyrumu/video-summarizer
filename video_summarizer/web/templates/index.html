@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Summarizer — 视频内容总结</title>
+    <style>
+        :root {
+            --bg: #0f0f13;
+            --surface: #1a1a24;
+            --surface2: #252535;
+            --border: #2e2e42;
+            --text: #e4e4ec;
+            --text-dim: #8888a0;
+            --accent: #6c6cf0;
+            --accent-hover: #8080ff;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --error: #f87171;
+            --radius: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .container { max-width: 880px; margin: 0 auto; padding: 32px 20px; }
+
+        /* Header */
+        .header { margin-bottom: 32px; }
+        .header h1 {
+            font-size: 24px; font-weight: 600;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+        .header nav { margin-top: 12px; display: flex; gap: 12px; }
+        .header nav a {
+            color: var(--text-dim); text-decoration: none; font-size: 13px;
+            padding: 4px 12px; border-radius: 6px; transition: 0.2s;
+        }
+        .header nav a:hover, .header nav a.active {
+            color: var(--text); background: var(--surface2);
+        }
+        .header nav a.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            cursor: default;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 14px; font-weight: 500; color: var(--text-dim);
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        /* Form */
+        .input-group {
+            display: flex; gap: 8px;
+        }
+        .input-group input {
+            flex: 1; padding: 12px 16px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); font-size: 15px;
+            outline: none; transition: 0.2s;
+        }
+        .input-group input:focus { border-color: var(--accent); }
+        .input-group input::placeholder { color: var(--text-dim); }
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 15px; font-weight: 500; cursor: pointer;
+            transition: 0.2s; white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--accent); color: white;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Status */
+        .status {
+            display: none; padding: 12px 16px; border-radius: 8px;
+            margin-top: 12px; font-size: 14px;
+        }
+        .status.loading {
+            display: block; background: var(--surface2); color: var(--text-dim);
+        }
+        .status.error {
+            display: block; background: rgba(248,113,113,0.1); color: var(--error);
+            border: 1px solid rgba(248,113,113,0.2);
+        }
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid var(--border); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            vertical-align: middle; margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .result-section { display: none; margin-top: 16px; }
+        .video-info {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            font-size: 13px; margin-bottom: 16px;
+        }
+        .video-info dt { color: var(--text-dim); }
+        .video-info dd { color: var(--text); }
+        .summary-text {
+            font-size: 15px; line-height: 1.8; color: var(--text);
+            white-space: pre-wrap;
+        }
+        .bullet-list {
+            margin-top: 12px; padding-left: 20px;
+        }
+        .bullet-list li {
+            font-size: 14px; line-height: 1.7; margin-bottom: 4px;
+        }
+        .tags {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
+        }
+        .tag {
+            padding: 3px 10px; border-radius: 12px;
+            background: rgba(108,108,240,0.15); color: var(--accent);
+            font-size: 12px;
+        }
+        .model-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 6px;
+            background: var(--surface2); font-size: 12px; color: var(--text-dim);
+            margin-top: 12px;
+        }
+
+        /* Tips */
+        .tips {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+        }
+        .tips .tip {
+            padding: 6px 14px; border-radius: 16px;
+            background: var(--surface2); font-size: 13px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .tips .tip:hover { background: var(--border); }
+        .tips .tip::before { content: "🎬 "; }
+
+        /* Footer */
+        .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 48px; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container { padding: 20px 16px; }
+            .input-group { flex-direction: column; }
+            .video-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Video Summarizer</h1>
+            <p>输入视频链接，AI 自动提取字幕并总结内容</p>
+            <nav id="mainNav">
+                <a href="/" class="active">首页</a>
+                <a href="/config" id="navConfig">配置</a>
+                <a href="/status" id="navStatus">系统状态</a>
+            </nav>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="card">
+            <div class="card-title">视频链接</div>
+            <div class="input-group">
+                <input type="url" id="urlInput" placeholder="粘贴视频链接，如 bilibili.com/BV... 或 douyin.com/video/...（支持直接粘贴抖音分享文本）">
+                <button class="btn btn-primary" id="submitBtn" onclick="summarize()">开始总结</button>
+            </div>
+            <div class="tips">
+                <div class="tip" onclick="fillUrl(this)">bilibili.com/video/BV1GJ411x7kP</div>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+
+        <!-- 结果区 -->
+        <div class="result-section" id="resultSection">
+            <!-- 视频信息 -->
+            <div class="card">
+                <div class="card-title">📄 视频信息</div>
+                <dl class="video-info" id="videoInfo"></dl>
+            </div>
+
+            <!-- 字幕预览 -->
+            <div class="card" id="subtitleCard" style="display:none;">
+                <div class="card-title">📝 字幕预览</div>
+                <div class="summary-text" id="subtitlePreview" style="font-size:13px; color:var(--text-dim);"></div>
+            </div>
+
+            <!-- 总结 -->
+            <div class="card">
+                <div class="card-title">🤖 AI 总结</div>
+                <div class="summary-text" id="summaryText"></div>
+                <ul class="bullet-list" id="bulletList"></ul>
+                <div class="tags" id="tags"></div>
+                <div class="model-badge" id="modelBadge"></div>
+
+                <!-- 查看原文（折叠） -->
+                <div id="rawToggle" style="display:none; margin-top:12px;">
+                    <a href="javascript:toggleRaw()" style="color:var(--accent); font-size:13px; text-decoration:none;">📄 查看完整回复</a>
+                    <pre id="rawText" style="display:none; margin-top:8px; padding:12px; background:var(--bg); border-radius:6px; font-size:13px; line-height:1.6; color:var(--text-dim); white-space:pre-wrap; overflow-x:auto;"></pre>
+                </div>
+
+                <!-- 保存按钮 -->
+                <div id="saveSection" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+                    <button class="btn btn-secondary" onclick="saveRecord()" style="font-size:13px; padding:8px 16px;">
+                        💾 保存记录
+                    </button>
+                    <span id="saveStatus" style="font-size:12px; color:var(--success); margin-left:8px; display:none;">已保存</span>
+                </div>
+            </div>
+
+            <!-- 费用信息 -->
+            <div class="card" id="costCard" style="display:none;">
+                <div class="card-title">💰 费用</div>
+                <div id="costInfo" style="font-size:13px; color:var(--text-dim);"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom:8px;">
+                🔌 停止服务: 按 <code style="background:var(--surface2);padding:2px 8px;border-radius:4px;">Ctrl+C</code> 关闭终端窗口，或点 <a href="javascript:shutdown()" style="color:var(--error);">这里</a>
+            </div>
+            <div style="font-size:12px; color:var(--text-dim);">
+                Video Summarizer · 本地运行 · 支持 DeepSeek / GLM / Qwen / Ollama
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PROVIDERS = {
+            'deepseek': { name: 'DeepSeek', models: ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'] },
+            'glm': { name: 'GLM (智谱)', models: ['glm-4-flash', 'glm-4-plus'] },
+            'qwen': { name: 'Qwen (通义千问)', models: ['qwen-turbo', 'qwen-plus', 'qwen-max'] },
+            'ollama': { name: 'Ollama (本地)', models: ['qwen2.5:7b', 'qwen2.5:14b', 'llama3.2:3b'] },
+        };
+
+        function fillUrl(el) {
+            document.getElementById('urlInput').value = el.textContent.trim();
+        }
+
+        function toggleRaw() {
+            const el = document.getElementById('rawText');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function shutdown() {
+            if (!confirm('确定要停止服务吗？')) return;
+            try {
+                await fetch('/api/shutdown', {method: 'POST'});
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:var(--text-dim);font-size:16px;">服务已停止，可以关闭终端窗口了。</div>';
+            } catch (e) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:var(--text-dim);font-size:16px;">服务已停止，可以关闭终端窗口了。</div>';
+            }
+        }
+
+        // 保存上次结果，供保存功能使用
+        let _lastResult = null;
+
+        async function saveRecord() {
+            if (!_lastResult) return;
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                const res = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(_lastResult),
+                });
+                const data = await res.json();
+                if (data.path) {
+                    document.getElementById('saveStatus').style.display = 'inline';
+                    document.getElementById('saveStatus').textContent = '✅ 已保存';
+                    setTimeout(() => {
+                        document.getElementById('saveStatus').style.display = 'none';
+                    }, 4000);
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '💾 保存记录';
+        }
+
+        async function summarize() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                showStatus('请输入视频链接', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '处理中...';
+            document.getElementById('resultSection').style.display = 'none';
+
+            // 淡化导航按钮，禁止点击
+            document.getElementById('navConfig').classList.add('disabled');
+            document.getElementById('navStatus').classList.add('disabled');
+
+            showStatus('正在处理视频...', 'loading');
+
+            try {
+                // 获取当前配置的 provider
+                const configRes = await fetch('/api/config');
+                const config = await configRes.json();
+                const provider = config.provider || 'ollama';
+                const model = config.model || '';
+
+                const res = await fetch('/api/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, provider, model }),
+                });
+                const data = await res.json();
+
+                hideStatus();
+
+                if (data.error) {
+                    showStatus('❌ ' + data.error, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '开始总结';
+                    document.getElementById('navConfig').classList.remove('disabled');
+                    document.getElementById('navStatus').classList.remove('disabled');
+                    return;
+                }
+
+                displayResult(data);
+            } catch (e) {
+                showStatus('❌ 请求失败: ' + e.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '开始总结';
+            document.getElementById('navConfig').classList.remove('disabled');
+            document.getElementById('navStatus').classList.remove('disabled');
+        }
+
+        function displayResult(data) {
+            const section = document.getElementById('resultSection');
+            section.style.display = 'block';
+
+            // 视频信息
+            const sub = data.subtitle || {};
+            document.getElementById('videoInfo').innerHTML = `
+                <dt>平台</dt><dd>${data.platform || '?'}</dd>
+                <dt>标题</dt><dd>${sub.title || '未知'}</dd>
+                <dt>时长</dt><dd>${formatDuration(sub.duration)}</dd>
+                <dt>字幕来源</dt><dd>${sourceLabel(sub.source)}</dd>
+                <dt>文本长度</dt><dd>${sub.text_length || 0} 字</dd>
+                <dt>估算 Token</dt><dd>~${sub.estimated_tokens || 0}</dd>
+            `;
+
+            // 字幕预览
+            const subtitleCard = document.getElementById('subtitleCard');
+            if (sub.text_length > 0) {
+                subtitleCard.style.display = 'block';
+                // 只显示前500字
+                const previewEl = document.getElementById('subtitlePreview');
+                if (sub.text_length > 500) {
+                    previewEl.textContent = sub.text_preview || 
+                        '(字幕内容已缓存，共' + sub.text_length + '字)';
+                }
+            } else {
+                subtitleCard.style.display = 'none';
+            }
+
+            // 总结 — 智能解析结构化输出
+            const summary = data.summary || {};
+            const summaryEl = document.getElementById('summaryText');
+            const bulletsEl = document.getElementById('bulletList');
+            const tagsEl = document.getElementById('tags');
+            const badgeEl = document.getElementById('modelBadge');
+            const rawToggle = document.getElementById('rawToggle');
+            const rawText = document.getElementById('rawText');
+
+            if (summary.error) {
+                summaryEl.textContent = '❌ ' + summary.error;
+                bulletsEl.innerHTML = '';
+                tagsEl.innerHTML = '';
+                badgeEl.textContent = '';
+                document.getElementById('saveSection').style.display = 'none';
+                return;
+            }
+
+            let fullText = summary.summary || '';
+
+            // 解析结构化输出
+            let overview = '';
+            let bullets = summary.bullet_points || [];
+            let topics = summary.key_topics || [];
+
+            // 尝试从原始文本提取 总体概括
+            const overviewMatch = fullText.match(/\*\*总体概括[：:]\*\*(.*?)(?=\*\*核心|$)/s);
+            if (overviewMatch) {
+                overview = overviewMatch[1].trim();
+            } else {
+                // fallback: 取前2-3句
+                const sentences = fullText.split(/[。！？.!?]/).filter(s => s.trim());
+                overview = sentences.slice(0, 2).join('。') + '。';
+            }
+
+            // 显示总体概括
+            if (overview) {
+                summaryEl.innerHTML = `<div style="font-size:15px;line-height:1.8;color:var(--text);margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">${overview}</div>`;
+            } else {
+                summaryEl.innerHTML = '';
+            }
+
+            // 要点
+            if (bullets.length > 0) {
+                bulletsEl.innerHTML = bullets.map(b => `<li>${b}</li>`).join('');
+            } else {
+                bulletsEl.innerHTML = '';
+            }
+
+            // 关键词
+            if (topics.length > 0) {
+                tagsEl.innerHTML = topics.map(t => `<span class="tag">${t}</span>`).join('');
+            } else {
+                tagsEl.innerHTML = '';
+            }
+
+            // 原始文本（默认折叠）
+            if (fullText) {
+                rawToggle.style.display = 'block';
+                rawText.textContent = fullText;
+            } else {
+                rawToggle.style.display = 'none';
+            }
+
+            // 模型信息
+            let badge = '';
+            if (summary.model_used) badge += `模型: ${summary.model_used}`;
+            if (summary.token_count) badge += ` · Token: ${summary.token_count}`;
+            badgeEl.textContent = badge;
+
+            // 费用
+            const costCard = document.getElementById('costCard');
+            const costInfo = document.getElementById('costInfo');
+            if (summary.cost_estimate !== undefined && summary.cost_estimate > 0) {
+                costCard.style.display = 'block';
+                costInfo.textContent = `预估费用: ¥${summary.cost_estimate.toFixed(4)} (Token: ${summary.token_count})`;
+            } else {
+                costCard.style.display = summary.model_used?.includes('本地') ? 'none' : 'none';
+            }
+
+            // 保存本次结果（内存 + sessionStorage）
+            const resultData = {
+                url: document.getElementById('urlInput').value.trim(),
+                subtitle: sub,
+                summary: summary,
+                platform: data.platform,
+            };
+            _lastResult = resultData;
+            sessionStorage.setItem('_lastResult', JSON.stringify(resultData));
+
+            // 滚动到结果区
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function sourceLabel(source) {
+            const labels = {
+                'CC': 'B站 CC 字幕',
+                'XML': 'XML 字幕',
+                'AI_ASR': '语音识别 (Whisper)',
+                'NONE': '无',
+            };
+            return labels[source] || source || '?';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return '0秒';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return m > 0 ? `${m}分${s}秒` : `${s}秒`;
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.className = 'status ' + type;
+            if (type === 'loading') {
+                el.innerHTML = `<span class="spinner"></span>${msg}`;
+            } else {
+                el.textContent = msg;
+            }
+        }
+
+        function hideStatus() {
+            document.getElementById('status').className = 'status';
+        }
+
+        // 页面加载时恢复上次的结果（来自 sessionStorage，导航回来时有效）
+        (function restoreLastResult() {
+            try {
+                const saved = sessionStorage.getItem('_lastResult');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    _lastResult = data;
+                    const urlInput = document.getElementById('urlInput');
+                    if (data.url) urlInput.value = data.url;
+                    // 重新渲染结果
+                    const section = document.getElementById('resultSection');
+                    section.style.display = 'block';
+                    document.getElementById('videoInfo').innerHTML = `
+                        <dt>平台</dt><dd>${data.platform || '?'}</dd>
+                        <dt>标题</dt><dd>${(data.subtitle || {}).title || '未知'}</dd>
+                        <dt>时长</dt><dd>${formatDuration((data.subtitle || {}).duration)}</dd>
+                        <dt>字幕来源</dt><dd>${sourceLabel((data.subtitle || {}).source)}</dd>
+                        <dt>文本长度</dt><dd>${(data.subtitle || {}).text_length || 0} 字</dd>
+                        <dt>估算 Token</dt><dd>~${(data.subtitle || {}).estimated_tokens || 0}</dd>
+                    `;
+                    const summary = data.summary || {};
+                    const sub = data.subtitle || {};
+                    let fullText = summary.summary || '';
+                    let overview = '';
+                    const overviewMatch = fullText.match(/\*\*总体概括[：:]\*\*(.*?)(?=\*\*核心|$)/s);
+                    if (overviewMatch) {
+                        overview = overviewMatch[1].trim();
+                    } else {
+                        const sentences = fullText.split(/[。！？.!?]/).filter(s => s.trim());
+                        overview = sentences.slice(0, 2).join('。') + '。';
+                    }
+                    document.getElementById('summaryText').innerHTML = overview
+                        ? `<div style="font-size:15px;line-height:1.8;color:var(--text);margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">${overview}</div>`
+                        : '';
+                    document.getElementById('bulletList').innerHTML = (summary.bullet_points || []).map(b => `<li>${b}</li>`).join('');
+                    document.getElementById('tags').innerHTML = (summary.key_topics || []).map(t => `<span class="tag">${t}</span>`).join('');
+                    document.getElementById('rawToggle').style.display = fullText ? 'block' : 'none';
+                    document.getElementById('rawText').textContent = fullText || '';
+                    let badge = '';
+                    if (summary.model_used) badge += `模型: ${summary.model_used}`;
+                    if (summary.token_count) badge += ` · Token: ${summary.token_count}`;
+                    document.getElementById('modelBadge').textContent = badge;
+                    document.getElementById('saveSection').style.display = 'block';
+                    const costCard = document.getElementById('costCard');
+                    if (summary.cost_estimate !== undefined && summary.cost_estimate > 0) {
+                        costCard.style.display = 'block';
+                        document.getElementById('costInfo').textContent = `预估费用: ¥${summary.cost_estimate.toFixed(4)} (Token: ${summary.token_count})`;
+                    }
+                }
+            } catch (e) { /* 静默恢复失败 */ }
+        })();
+    </script>
+</body>
+</html>
