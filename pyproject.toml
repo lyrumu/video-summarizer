@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     {name = "lyrumu"},
 ]
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 keywords = ["bilibili", "douyin", "video", "summary", "whisper", "ai"]
 

@@ -1,7 +1,7 @@
 """
 faster-whisper 语音识别引擎。
 支持 CPU 和 GPU，自动检测可用设备。
-模型首次运行时会自动下载（~1-2GB），后续缓存到 ~/.cache/whisper/。
+模型首次运行时会自动下载，后续缓存到 ~/.cache/faster-whisper/。
 """
 
 from pathlib import Path
@@ -47,6 +47,9 @@ class WhisperEngine(ASREngine):
                 "faster-whisper 未安装。请运行: pip install faster-whisper\n"
                 "如果安装失败，也可以用 'openai-whisper' 替换。"
             )
+
+        print(f"  ⏳ 正在初始化 Whisper 模型 ({self.model_size})，首次运行可能需要下载")
+        print(f"     请耐心等待...\n")
 
         # 自动检测设备
         device = self.device

@@ -1,238 +1,245 @@
 <p align="center">
   <h1 align="center">🎬 Video Summarizer</h1>
-  <p align="center">输入 B站 / 抖音链接 → 自动提取字幕 → AI 总结内容</p>
+  <p align="center">粘贴视频链接 → 自动提取字幕 → AI 总结内容<br>支持 B站 / 抖音，支持 DeepSeek / GLM / Qwen / 本地 Ollama</p>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue">
+  <img src="https://img.shields.io/badge/pip%20install-ffmpeg%20required-orange">
   <img src="https://img.shields.io/badge/license-MIT-green">
-  <img src="https://img.shields.io/badge/DeepSeek-GLM--Qwen--Ollama-orange">
 </p>
 
 ---
 
-## ✨ 功能介绍
+## 📸 效果预览
 
-| 功能 | 说明 |
-|------|------|
-| 🎬 **B站视频** | 有字幕的直接 API 提取（免费），无字幕的自动语音识别 |
-| 🎵 **抖音视频** | 自动下载音频 → Whisper 语音识别转文字 |
-| 🤖 **AI 总结** | 支持 DeepSeek V4 / GLM / Qwen 云端 API，以及 Ollama 本地模型 |
-| 🏠 **本地免费** | 搭配 Ollama 使用，完全离线，0 成本 |
-| 💾 **自动保存** | 每次总结可保存为 Markdown 文件，方便日后翻阅 |
+![demo](https://raw.githubusercontent.com/lyrumu/video-summarizer/main/screenshots/demo.gif)
+
+> 还没截图？先跑起来看看。上面是效果示意，具体界面以实际为准。
 
 ---
 
-## 🚀 快速开始
+## 🚀 一键安装
 
-### 1️⃣ 安装
+### 前置条件
 
-任选一种方式：
+需要 **Python 3.10+** 和 **pip**。验证方法：
 
 ```bash
-# 方式一：一键安装（推荐）
-bash <(curl -s https://raw.githubusercontent.com/lyrumu/video-summarizer/main/install.sh)
-
-# 方式二：pip 安装
-pip install video-summarizer
-
-# 方式三：源码运行
-git clone https://github.com/lyrumu/video-summarizer.git
-cd video-summarizer
-pip install -r requirements.txt
+python3 --version
+pip --version
 ```
 
-### 2️⃣ 启动
+### 安装
 
-安装完成后，在终端输入：
+```bash
+pip install video-summarizer
+```
+
+### 启动
 
 ```bash
 video-summarizer
 ```
 
-看到这行输出就说明启动成功了：
-```
-🚀 启动 Web UI...
-  http://127.0.0.1:8020
-```
-
-> ⚠ 请保持终端窗口开着，不要关闭。想停止服务按 `Ctrl+C`。
-
-### 3️⃣ 打开浏览器
-
-在浏览器地址栏输入：
+终端会显示：
 
 ```
-http://127.0.0.1:8020
+  🎬 Video Summarizer
+
+  [1/3] 🔍 检测系统依赖.......... ✅ /usr/bin/ffmpeg
+  [2/3] 📥 检查 Whisper 模型..... ✅ 已缓存
+
+  ───────────────────────────────
+  🎬 Video Summarizer Web UI
+  http://127.0.0.1:8000
+  ───────────────────────────────
+
+  按 Ctrl+C 停止服务
+```
+
+浏览器会自动打开。如果没有，手动访问上面的地址。
+
+> 终端输出中带有 `INFO:` 前缀的信息是 uvicorn 的正常日志，不是报错。
+
+---
+
+## 🔊 ffmpeg 安装（必须）
+
+Whisper 语音识别需要 ffmpeg 来提取音频。
+
+### Windows
+
+**方式一：winget（推荐）**
+```cmd
+winget install "FFmpeg (Essentials Build)"
+```
+
+**方式二：手动下载**
+1. 下载 https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+2. 解压到 `C:\ffmpeg`
+3. 把 `C:\ffmpeg\bin` 添加到系统 PATH
+4. 验证：打开新终端运行 `ffmpeg -version`
+
+**方式三：放项目目录**
+把 `ffmpeg.exe` 放到 `video-summarizer` 命令的运行目录下即可，程序会自动找到。
+
+### macOS
+
+```bash
+brew install ffmpeg
+```
+
+### Linux
+
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# CentOS/RHEL
+sudo dnf install ffmpeg
 ```
 
 ---
 
-## 📖 使用教程
+## 🤖 Whisper 模型
 
-### 第一步：启动服务
-
-在终端运行 `video-summarizer`，然后打开浏览器访问 **http://127.0.0.1:8020**
-
-你会看到这样的界面：
+首次使用语音识别（无字幕视频）时，程序会自动下载 Whisper 模型。
 
 ```
-┌─────────────────────────────────────────────────┐
-│  🎬 Video Summarizer                            │
-│  输入视频链接，AI 自动提取字幕并总结内容          │
-│                                                  │
-│  ┌─────────────────────────────────────┐ ┌────┐ │
-│  │ 粘贴 B站 / 抖音链接...              │ │开始│ │
-│  └─────────────────────────────────────┘ └────┘ │
-│  🎬 bilibili.com/video/BV1GJ411x7kP             │
-└─────────────────────────────────────────────────┘
+  ⏳ 正在初始化 Whisper 模型 (small)，首次运行可能需要下载
+     请耐心等待...
 ```
 
-### 第二步：配置 AI 模型
+- 模型大小：`small`（约 500MB）—— 平衡速度和精度
+- 缓存位置：`~/.cache/faster-whisper/`
+- 只需下载一次，后续自动使用缓存
 
-点击顶部导航栏的 **配置**，进入 `/config` 页面。
-
-#### 选项 A：用云端 API（推荐新手）
-
-1. 选择提供商（如 **DeepSeek**）
-2. 输入你的 **API Key**
-   - DeepSeek: 在 [platform.deepseek.com](https://platform.deepseek.com) 注册获取
-   - GLM: 在 [open.bigmodel.cn](https://open.bigmodel.cn) 注册获取
-   - Qwen: 在 [dashscope.aliyuncs.com](https://dashscope.aliyuncs.com) 注册获取
-3. 选择模型（默认 `deepseek-v4-flash`，或点 **🔄 刷新** 实时拉取最新列表）
-4. 点 **保存配置**
-
-#### 选项 B：用本地模型（完全免费）
-
-需要先安装 Ollama：
-
-```bash
-# 安装 Ollama（Linux/Mac）
-curl -fsSL https://ollama.com/install.sh | sh
-
-# 下载一个模型（任选一个）
-ollama pull deepseek-r1:8b      # 推理强，约5GB
-ollama pull qwen2.5:7b          # 均衡，约4GB
-ollama pull llama3.2:3b         # 轻量，约2GB
-```
-
-然后回到配置页，选 **Ollama（本地免费）** → 选择你下载的模型 → 保存（不需要 API Key）。
-
-> **Windows 用户注意**：Ollama 安装在 Windows 上时，WSL 可以通过 `localhost:11434` 自动访问，配置页无需修改。
-
-### 第三步：总结视频
-
-1. 回到 **首页**
-2. 在输入框粘贴视频链接，例如：
-   ```
-   https://www.bilibili.com/video/BV1GJ411x7kP
-   ```
-3. 点击 **开始总结**
-4. 等待处理完成（首次运行会自动下载 Whisper 语音模型，约 150MB）
-
-### 第四步：查看结果
-
-处理完成后你会看到：
-
-```
-┌─────────────────────────────────────────────────┐
-│  📄 视频信息                                      │
-│  平台: BILIBILI  │  时长: 1分21秒                  │
-│  字幕来源: 语音识别  │  文本: 515字                 │
-├─────────────────────────────────────────────────┤
-│  🤖 AI 总结                                      │
-│                                                  │
-│  DeepSeek R1 8B 自动识别了视频内容并生成了          │
-│  下面这份总结...                                   │
-│                                                  │
-│  📋 要点：                                        │
-│  • ...                                           │
-│  • ...                                           │
-│                                                  │
-│  🏷 关键词: AI绘画, GPT Image2, ChatGPT           │
-│                                                  │
-│  [💾 保存记录]  [📄 查看完整回复]                   │
-└─────────────────────────────────────────────────┘
-```
-
-- **💾 保存记录** — 保存为 `.md` 文件到 `~/.video-summarizer/history/`
-- **📄 查看完整回复** — 展开查看 AI 的原始输出
-
-### 第五步：管理历史记录
-
-所有保存的记录在 `~/.video-summarizer/history/` 目录下，按日期命名：
-
-```
-~/.video-summarizer/history/
-├── 20260521_092016_测试视频.md
-├── 20260521_102030_ChatGPT教程.md
-└── ...
-```
-
-你也可以通过命令行指定保存位置：
-
-```bash
-video-summarizer --output-dir ~/Desktop/summaries
-```
+> 如果网络不好，可以手动下载模型文件放到缓存目录。具体参考 [faster-whisper 文档](https://github.com/SYSTRAN/faster-whisper)。
 
 ---
 
-## 🖥 命令行模式
+## 🖥 Windows 使用
 
-不想开浏览器的话，可以直接在终端处理：
+### 直接使用（127.0.0.1）
+
+安装 ffmpeg 后直接运行即可：
 
 ```bash
-# 单次处理
-video-summarizer --url "https://www.bilibili.com/video/BVxxx"
-
-# 指定模型
-video-summarizer --url "https://www.douyin.com/video/xxx" --model ollama
-
-# 指定保存目录
-video-summarizer --output-dir ~/Desktop/summaries --url "https://..."
+video-summarizer
 ```
+
+浏览器访问 `http://127.0.0.1:8000`（端口自动分配，以实际显示为准）。
+
+### WSL 中使用
+
+WSL 默认 `127.0.0.1` 从 Windows 浏览器无法直接访问，需要：
+
+```bash
+video-summarizer --host 0.0.0.0
+```
+
+然后 Windows 浏览器访问终端上显示的那个 IP 地址。
 
 ---
 
-## ⚙️ 配置详解
+## 🔧 高级选项
 
-| 配置项 | 路径 | 说明 |
-|--------|------|------|
-| API Key | `/config` 页面 | 云端模型的密钥 |
-| 模型选择 | `/config` 页面 | 当前支持 DeepSeek / GLM / Qwen / Ollama |
-| 实时刷新 | `/config` 页面 🔄 按钮 | 从厂商 API 拉取最新模型列表 |
-| 自定义模型 | `/config` 页面 | 支持手动输入任意模型名 |
-| 缓存管理 | `/config` 页面 | 清空已处理的视频缓存 |
-| 保存目录 | `--output-dir` 参数 | 指定历史记录保存位置 |
+### 指定端口
 
-### 各模型费用参考
+```bash
+video-summarizer --port 8888
+```
 
-| 提供商 | 模型 | 输入价格 | 输出价格 |
-|--------|------|---------|---------|
-| DeepSeek | V4 Flash | ¥1/百万 tokens | ¥2/百万 tokens |
-| DeepSeek | V4 Pro | ¥3/百万 tokens | ¥6/百万 tokens |
-| GLM | 4-Flash | 免费额度 | 免费额度 |
-| Qwen | Turbo | ¥0.3/百万 tokens | ¥0.6/百万 tokens |
-| Ollama | 所有模型 | **免费** | **免费** |
+不指定则自动分配（8000-8020 中找可用端口）。
+
+> 如果指定端口被占用，程序会报错提示，不会偷偷换端口。
+
+### 禁止自动打开浏览器
+
+```bash
+BROWSER=0 video-summarizer
+```
+
+适合无桌面环境的服务器、SSH 连接等场景。
+
+### 其他参数
+
+```bash
+video-summarizer --help
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--port PORT` | 指定端口（默认自动分配） |
+| `--host HOST` | 指定主机地址（WSL 需 `--host 0.0.0.0`） |
+| `--no-browser` | 不自动打开浏览器 |
+| `--cli` | 命令行交互模式 |
+| `--url URL` | 单次处理模式 |
+| `--model NAME` | 指定模型提供商 |
+| `--output-dir DIR` | 历史记录保存目录 |
+
+---
+
+## 🔌 配置文件位置
+
+所有数据存储在用户目录下，互不干扰：
+
+| 内容 | 位置 |
+|------|------|
+| 配置文件（API Key 等） | `~/.video-summarizer/config.json` |
+| 历史记录（保存的 .md） | `~/.video-summarizer/history/` |
+| 字幕缓存 | `~/.video-summarizer/cache/` |
+| 音频缓存 | `~/.video-summarizer/audio_cache/` |
+| Whisper 模型 | `~/.cache/faster-whisper/` |
+
+---
+
+## 🗑 卸载
+
+### 卸载包
+
+```bash
+pip uninstall video-summarizer
+```
+
+### 清理配置和缓存（可选）
+
+```bash
+# 删除配置和数据
+rm -rf ~/.video-summarizer
+
+# 删除 Whisper 模型缓存
+rm -rf ~/.cache/faster-whisper
+```
 
 ---
 
 ## ❓ 常见问题
 
 **Q: 第一次运行很慢？**
-A: 首次会下载 Whisper 语音识别模型（~150MB），后续秒开。
+A: 首次会下载 Whisper 语音识别模型（约 500MB），后续秒开。
 
-**Q: 提示模型找不到？**
-A: 去配置页点 **🔄 刷新** 从 API 拉取最新列表，或选 **✏️ 自定义模型名** 手动输入。
+**Q: 端口 8000 用不了？**
+A: 程序会自动找可用端口，不用管。如果指定了被占用的端口，会报错并提示换一个。
+
+**Q: 提示 "未找到 ffmpeg"？**
+A: 参考上方 ffmpeg 安装章节。Windows 用户也可以把 `ffmpeg.exe` 放到运行目录。
+
+**Q: 输出很多 `INFO:` 日志正常吗？**
+A: 正常，那是 uvicorn 的访问日志，不是报错。
 
 **Q: 能处理多长的视频？**
 A: 不限长度。B站有字幕的直接 API 提取，无字幕的会自动分段语音识别。
 
-**Q: 要不要 GPU？**
-A: 推荐有 GPU，但不是必须。Whisper 在 CPU 上也能跑（慢一些），Ollama 也一样。
+**Q: 要 GPU 吗？**
+A: 推荐但不需要。Whisper 在 CPU 上也能跑（慢一些）。
 
 **Q: 历史记录存在哪？**
-A: 默认 `~/.video-summarizer/history/`，可通过 `--output-dir` 改成桌面等位置。
+A: `~/.video-summarizer/history/`，可通过 `--output-dir` 指定其他位置。
+
+**Q: 怎么换模型？**
+A: 打开配置页面，选提供商 → 输 API Key → 保存。Ollama 用户选 Ollama 即可，不需要 Key。
 
 ---
 
@@ -241,15 +248,17 @@ A: 默认 `~/.video-summarizer/history/`，可通过 `--output-dir` 改成桌面
 ```
 video-summarizer/
 ├── video_summarizer/       # 核心代码
-│   ├── engine.py           # 主编排器（协调各模块）
+│   ├── engine.py           # 主编排器
+│   ├── startup.py          # 启动检测 + 自动端口 + 开浏览器
 │   ├── fetchers/           # 平台提取器（可插拔）
-│   │   ├── bilibili.py     # B站字幕提取
-│   │   └── douyin.py       # 抖音音频提取
-│   ├── asr/                # 语音识别（Whisper）
-│   ├── summarizer/         # AI 总结层
-│   └── web/                # Web UI 界面
-├── install.sh              # 一键安装脚本
-└── pyproject.toml          # Python 包配置
+│   │   ├── bilibili.py     # B站字幕
+│   │   └── douyin.py       # 抖音
+│   ├── asr/                # 语音识别
+│   │   └── whisper_engine.py
+│   ├── summarizer/         # AI 总结
+│   └── web/                # Web UI
+├── pyproject.toml          # 包配置
+└── README.md
 ```
 
 ## 🔌 扩展开发
@@ -257,7 +266,6 @@ video-summarizer/
 添加新平台只需一个文件 + 一行注册：
 
 ```python
-# video_summarizer/fetchers/my_platform.py
 from .base import Fetcher, FetcherRegistry
 
 class MyFetcher(Fetcher):
