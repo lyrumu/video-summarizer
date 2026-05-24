@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "video-summarizer"
+name = "vidsum"
 version = "0.2.0"
 description = "🎬 视频内容总结工具 — 输入B站/抖音链接，自动提取字幕+AI总结"
 readme = "README.md"
@@ -31,7 +31,7 @@ Homepage = "https://github.com/lyrumu/video-summarizer"
 Repository = "https://github.com/lyrumu/video-summarizer"
 
 [project.scripts]
-video-summarizer = "video_summarizer.__main__:main"
+vidsum = "video_summarizer.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["video_summarizer*"]

@@ -33,13 +33,13 @@ pip --version
 ### 安装
 
 ```bash
-pip install video-summarizer
+pip install vidsum
 ```
 
 ### 启动
 
 ```bash
-video-summarizer
+vidsum
 ```
 
 终端会显示：
@@ -82,7 +82,7 @@ winget install "FFmpeg (Essentials Build)"
 4. 验证：打开新终端运行 `ffmpeg -version`
 
 **方式三：放项目目录**
-把 `ffmpeg.exe` 放到 `video-summarizer` 命令的运行目录下即可，程序会自动找到。
+把 `ffmpeg.exe` 放到 `vidsum` 命令的运行目录下即可，程序会自动找到。
 
 ### macOS
 
@@ -126,7 +126,7 @@ sudo dnf install ffmpeg
 安装 ffmpeg 后直接运行即可：
 
 ```bash
-video-summarizer
+vidsum
 ```
 
 浏览器访问 `http://127.0.0.1:8000`（端口自动分配，以实际显示为准）。
@@ -136,7 +136,7 @@ video-summarizer
 WSL 默认 `127.0.0.1` 从 Windows 浏览器无法直接访问，需要：
 
 ```bash
-video-summarizer --host 0.0.0.0
+vidsum --host 0.0.0.0
 ```
 
 然后 Windows 浏览器访问终端上显示的那个 IP 地址。
@@ -148,7 +148,7 @@ video-summarizer --host 0.0.0.0
 ### 指定端口
 
 ```bash
-video-summarizer --port 8888
+vidsum --port 8888
 ```
 
 不指定则自动分配（8000-8020 中找可用端口）。
@@ -158,7 +158,7 @@ video-summarizer --port 8888
 ### 禁止自动打开浏览器
 
 ```bash
-BROWSER=0 video-summarizer
+BROWSER=0 vidsum
 ```
 
 适合无桌面环境的服务器、SSH 连接等场景。
@@ -166,7 +166,7 @@ BROWSER=0 video-summarizer
 ### 其他参数
 
 ```bash
-video-summarizer --help
+vidsum --help
 ```
 
 | 参数 | 说明 |
@@ -200,7 +200,7 @@ video-summarizer --help
 ### 卸载包
 
 ```bash
-pip uninstall video-summarizer
+pip uninstall vidsum
 ```
 
 ### 清理配置和缓存（可选）

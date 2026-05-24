@@ -47,10 +47,10 @@ else
     echo "✅ ffmpeg 已安装"
 fi
 
-# 安装 video-summarizer
+# 安装 vidsum
 echo ""
-echo "📦 安装 video-summarizer..."
-$PYTHON -m pip install --user video-summarizer 2>/dev/null || {
+echo "📦 安装 vidsum..."
+$PYTHON -m pip install --user vidsum 2>/dev/null || {
     # 如果还没上传 PyPI，从 GitHub 安装
     echo "  从 GitHub 安装开发版..."
     $PYTHON -m pip install --user git+https://github.com/lyrumu/video-summarizer.git
