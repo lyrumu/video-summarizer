@@ -25,3 +25,6 @@ Thumbs.db
 downloaded/
 temp/
 *.exe
+
+# codegraph
+.codegraph/

@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 
 # ── 工具函数 ──────────────────────────────────────────────
@@ -25,7 +25,7 @@ def _is_wsl() -> bool:
     return os.path.exists("/proc/sys/fs/binfmt_misc/WSLInterop")
 
 
-# ── 1. ffmpeg 检测 ────────────────────────────────────────
+# ── 1. ffmpeg 检测（基础版，含本地路径 + 系统 PATH）────
 
 
 def check_ffmpeg() -> tuple[bool, str]:
@@ -66,6 +66,57 @@ def check_ffmpeg() -> tuple[bool, str]:
                 return True, path_str
 
     return False, "未找到 ffmpeg（Whisper 语音识别需要）"
+
+
+def _download_progress(percent: Optional[int], message: str):
+    """ffmpeg 下载进度显示，用 \\r 原地刷新同一行。"""
+    if percent is not None and percent < 100:
+        # 进度条 20 格
+        filled = percent // 5
+        bar = "█" * filled + "░" * (20 - filled)
+        print(f"\r  ⏳ 正在自动下载 ffmpeg... {bar} {percent}%", end="", flush=True)
+    elif percent == 100:
+        print(f"\r  ⏳ 正在自动下载 ffmpeg... {'█' * 20} 100%", end="", flush=True)
+        print()
+    else:
+        # 解压/重试等状态
+        print(f"\r  ⏳ {message}...", end="", flush=True)
+
+
+def check_ffmpeg_with_download() -> tuple[bool, str]:
+    """
+    检测 ffmpeg + 自动下载回退。
+
+    检测顺序:
+      1. 当前目录 ./ffmpeg(.exe)
+      2. ./bin/ffmpeg(.exe)
+      3. 系统 PATH
+      4. ~/.vidsum/bin/ffmpeg(.exe)  ← 自动下载缓存
+      5. 自动下载到 ~/.vidsum/bin/   ← 全自动
+
+    返回: (是否可用, 描述信息)
+    """
+    # 1-3: 本地路径 + 系统 PATH
+    ok, msg = check_ffmpeg()
+    if ok:
+        return True, msg
+
+    # 4-5: 缓存 → 自动下载
+    from video_summarizer.ffmpeg_downloader import ensure_ffmpeg, check_cached_ffmpeg
+
+    # 先查缓存
+    cached_ok, cached_msg = check_cached_ffmpeg()
+    if cached_ok:
+        return True, cached_msg
+
+    # 自动下载（包含进度显示）
+    print(f"\r  ⏳ 未检测到系统 ffmpeg，正在自动下载...", end="", flush=True)
+    print()
+    download_ok, download_msg = ensure_ffmpeg(progress_callback=_download_progress)
+    if download_ok:
+        return True, download_msg
+
+    return False, "未找到 ffmpeg，自动下载失败。请手动安装: https://ffmpeg.org/download.html"
 
 
 # ── 2. Whisper 模型检查（轻量）────────────────────────────

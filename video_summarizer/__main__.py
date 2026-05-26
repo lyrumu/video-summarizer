@@ -97,7 +97,7 @@ def main():
         print_header,
         print_check,
         print_startup_result,
-        check_ffmpeg,
+        check_ffmpeg_with_download,
         check_whisper_model,
         find_available_port,
         open_browser,
@@ -106,8 +106,8 @@ def main():
 
     print_header()
 
-    # [1/3] 检测 ffmpeg
-    ffmpeg_ok, ffmpeg_msg = check_ffmpeg()
+    # [1/3] 检测 ffmpeg（未找到时自动下载）
+    ffmpeg_ok, ffmpeg_msg = check_ffmpeg_with_download()
     print_check(1, 3, "检测系统依赖", ffmpeg_msg, ok=ffmpeg_ok)
 
     # [2/3] 检查 Whisper 模型

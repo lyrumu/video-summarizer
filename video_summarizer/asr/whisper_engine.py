@@ -16,14 +16,14 @@ class WhisperEngine(ASREngine):
 
     # 各模型大小（磁盘占用）
     MODEL_SIZES = {
-        "tiny":    "~150MB  (最快，精度最低)",
-        "base":    "~300MB",
-        "small":   "~500MB  (推荐，平衡速度和精度)",
+        "tiny":    "~75MB   (最快，精度最低)",
+        "base":    "~142MB  (推荐，平衡速度和精度)",
+        "small":   "~466MB",
         "medium":  "~1.5GB  (较慢，精度高)",
-        "large":   "~3GB    (最慢，精度最高)",
+        "large":   "~3.1GB  (最慢，精度最高)",
     }
 
-    def __init__(self, model_size: str = "small", device: str = "auto",
+    def __init__(self, model_size: str = "base", device: str = "auto",
                  compute_type: str = "auto"):
         """
         model_size: tiny/base/small/medium/large-v3
