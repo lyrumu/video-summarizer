@@ -106,6 +106,9 @@ class VideoSummarizer:
                 if subtitle.title:
                     asr_result.title = subtitle.title
                 subtitle = asr_result
+            elif asr_result and asr_result.error:
+                # API 和 ASR 都没字幕 → 显示 ASR 的错误（比 API 错误更有信息量）
+                subtitle = asr_result
 
         # 写入缓存
         if use_cache and self.cache and subtitle.segments:
