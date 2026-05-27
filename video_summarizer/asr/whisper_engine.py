@@ -4,6 +4,7 @@ faster-whisper 语音识别引擎。
 模型首次运行时会自动下载，后续缓存到 ~/.cache/faster-whisper/。
 """
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -66,13 +67,46 @@ class WhisperEngine(ASREngine):
         if compute_type == "auto":
             compute_type = "float16" if device == "cuda" else "int8"
 
-        self._model = WhisperModel(
-            self.model_size,
-            device=device,
-            compute_type=compute_type,
-            cpu_threads=4,
-            num_workers=2,
+        # 尝试加载模型，如果 HuggingFace 被墙则自动回退到国内镜像
+        self._model = self._load_model_with_fallback(
+            self.model_size, device, compute_type,
         )
+
+    def _load_model_with_fallback(self, model_size: str,
+                                   device: str,
+                                   compute_type: str) -> "WhisperModel":
+        """加载 Whisper 模型，国内用户自动回退到 hf-mirror.com"""
+        from faster_whisper import WhisperModel
+
+        for attempt, endpoint in enumerate([None, "https://hf-mirror.com"]):
+            if attempt == 1:
+                print(f"  ⏳ 默认源下载失败，正在尝试国内镜像 hf-mirror.com...")
+                os.environ["HF_ENDPOINT"] = endpoint
+
+            try:
+                return WhisperModel(
+                    model_size,
+                    device=device,
+                    compute_type=compute_type,
+                    cpu_threads=4,
+                    num_workers=2,
+                )
+            except Exception as e:
+                err_str = str(e)
+                is_network_error = any(k in err_str for k in [
+                    "ConnectTimeout", "ConnectionError", "Timeout",
+                    "cannot connect", "WinError 10060",
+                ])
+                if is_network_error and attempt == 0:
+                    # 网络问题 + 还没试过镜像 → 继续重试
+                    continue
+                # 其他错误或镜像也失败 → 抛出去
+                hint = ("\n💡 提示: 如果在中国大陆，可设置 HuggingFace 镜像:\n"
+                        "   set HF_ENDPOINT=https://hf-mirror.com\n"
+                        "   或重启程序时带上: set HF_ENDPOINT=https://hf-mirror.com && vidsum")
+                if is_network_error:
+                    raise RuntimeError(f"模型下载失败（网络连接超时）{hint}") from e
+                raise
 
     def supported_formats(self) -> list[str]:
         return [".mp3", ".wav", ".m4a", ".ogg", ".flac", ".wma"]

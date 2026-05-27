@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vidsum"
-version = "0.2.6"
+version = "0.2.7"
 description = "🎬 视频内容总结工具 — 输入B站/抖音链接，自动提取字幕+AI总结"
 readme = "README.md"
 authors = [
