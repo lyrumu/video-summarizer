@@ -41,7 +41,7 @@ def main():
     parser.add_argument("--no-browser", action="store_true",
                         help="不自动打开浏览器（也可用环境变量 BROWSER=0）")
     parser.add_argument("--output-dir", type=str, default=None,
-                        help="历史记录保存目录（默认 ~/.video-summarizer/history）")
+                        help="历史记录保存目录（默认 ~/.vidsum/history）")
 
     args = parser.parse_args()
 

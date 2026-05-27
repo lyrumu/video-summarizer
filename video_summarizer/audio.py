@@ -17,7 +17,7 @@ from typing import Optional
 import yt_dlp
 
 
-AUDIO_DIR = Path.home() / ".video-summarizer" / "audio_cache"
+AUDIO_DIR = Path.home() / ".vidsum" / "audio_cache"
 
 
 class AudioDownloader:

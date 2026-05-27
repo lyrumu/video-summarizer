@@ -46,7 +46,6 @@ def _get_download_config() -> Optional[dict]:
             "url": "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z",
             "archive_type": "7z",
             "binary_names": ["ffmpeg.exe", "ffprobe.exe"],
-            "archive_prefix": "ffmpeg-release-essentials",
         }
 
     if system == "darwin":
@@ -214,28 +213,48 @@ def _report(callback: Optional[Callable], percent: Optional[int], message: str):
 
 
 def _extract_windows(archive_path: Path, dest_dir: Path, config: dict) -> bool:
-    """从 .7z 中提取 ffmpeg.exe / ffprobe.exe。"""
+    """从 .7z 中提取 ffmpeg.exe / ffprobe.exe，不依赖固定目录前缀。"""
     import py7zr
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    prefix = config["archive_prefix"]
+    binary_names = config["binary_names"]
 
     with py7zr.SevenZipFile(archive_path, mode="r") as sz:
-        targets = [f"{prefix}/bin/{name}" for name in config["binary_names"]]
-        sz.extract(path=dest_dir, targets=targets)
+        # 列出压缩包内所有文件
+        all_names = sz.getnames()
 
-    # 从子目录移到缓存根目录
-    for name in config["binary_names"]:
-        src = dest_dir / prefix / "bin" / name
-        if src.exists():
-            shutil.move(str(src), str(dest_dir / name))
+        # 找到 ffmpeg.exe / ffprobe.exe 的完整路径（不限目录层级）
+        targets = []
+        for name in binary_names:
+            matches = [n for n in all_names if n.endswith(f"/{name}") or n == name]
+            if matches:
+                targets.append(matches[0])
 
-    # 清理临时目录
-    tmp_sub = dest_dir / prefix
-    if tmp_sub.exists():
-        shutil.rmtree(str(tmp_sub))
+        if targets:
+            sz.extract(path=dest_dir, targets=targets)
+        else:
+            # 路径不匹配——可能目录结构变了，干脆全解
+            sz.extractall(path=dest_dir)
 
-    return True
+    # 在 dest_dir 下递归搜索二进制文件，移到根目录
+    found = []
+    for name in binary_names:
+        matches = list(dest_dir.rglob(name))
+        if matches:
+            src = matches[0]
+            dst = dest_dir / name
+            if src != dst:
+                if dst.exists():
+                    dst.unlink()
+                shutil.move(str(src), str(dst))
+            found.append(name)
+
+    # 清理残留子目录
+    for item in list(dest_dir.iterdir()):
+        if item.is_dir():
+            shutil.rmtree(str(item))
+
+    return len(found) == len(binary_names)
 
 
 def _extract_macos_zip(archive_path: Path, dest_dir: Path, binary_name: str) -> bool:

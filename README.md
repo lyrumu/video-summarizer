@@ -187,11 +187,12 @@ vidsum --help
 
 | 内容 | 位置 |
 |------|------|
-| 配置文件（API Key 等） | `~/.video-summarizer/config.json` |
-| 历史记录（保存的 .md） | `~/.video-summarizer/history/` |
-| 字幕缓存 | `~/.video-summarizer/cache/` |
-| 音频缓存 | `~/.video-summarizer/audio_cache/` |
+| 配置文件（API Key 等） | `~/.vidsum/config.json` |
+| 历史记录（保存的 .md） | `~/.vidsum/history/` |
+| 字幕缓存 | `~/.vidsum/cache/` |
+| 音频缓存 | `~/.vidsum/audio_cache/` |
 | Whisper 模型 | `~/.cache/faster-whisper/` |
+| ffmpeg 缓存 | `~/.vidsum/bin/` |
 
 ---
 
@@ -207,7 +208,7 @@ pip uninstall vidsum
 
 ```bash
 # 删除配置和数据
-rm -rf ~/.video-summarizer
+rm -rf ~/.vidsum
 
 # 删除 Whisper 模型缓存
 rm -rf ~/.cache/faster-whisper
@@ -236,7 +237,7 @@ A: 不限长度。B站有字幕的直接 API 提取，无字幕的会自动分�
 A: 推荐但不需要。Whisper 在 CPU 上也能跑（慢一些）。
 
 **Q: 历史记录存在哪？**
-A: `~/.video-summarizer/history/`，可通过 `--output-dir` 指定其他位置。
+A: `~/.vidsum/history/`，可通过 `--output-dir` 指定其他位置。
 
 **Q: 怎么换模型？**
 A: 打开配置页面，选提供商 → 输 API Key → 保存。Ollama 用户选 Ollama 即可，不需要 Key。

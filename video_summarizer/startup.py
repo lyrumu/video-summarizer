@@ -69,18 +69,17 @@ def check_ffmpeg() -> tuple[bool, str]:
 
 
 def _download_progress(percent: Optional[int], message: str):
-    """ffmpeg 下载进度显示，用 \\r 原地刷新同一行。"""
+    """ffmpeg 下载进度显示。"""
     if percent is not None and percent < 100:
-        # 进度条 20 格
+        # 进度条 20 格，\r 原地刷新
         filled = percent // 5
         bar = "█" * filled + "░" * (20 - filled)
         print(f"\r  ⏳ 正在自动下载 ffmpeg... {bar} {percent}%", end="", flush=True)
     elif percent == 100:
-        print(f"\r  ⏳ 正在自动下载 ffmpeg... {'█' * 20} 100%", end="", flush=True)
-        print()
+        print(f"\r  ⏳ 正在自动下载 ffmpeg... {'█' * 20} 100%")
     else:
-        # 解压/重试等状态
-        print(f"\r  ⏳ {message}...", end="", flush=True)
+        # 解压/重试等状态，换新行
+        print(f"  ⏳ {message}...")
 
 
 def check_ffmpeg_with_download() -> tuple[bool, str]:

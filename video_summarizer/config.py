@@ -1,5 +1,5 @@
 """
-用户配置管理 — 支持多种 LLM 配置，持久化到 ~/.video-summarizer/config.json
+用户配置管理 — 支持多种 LLM 配置，持久化到 ~/.vidsum/config.json
 """
 
 import json
@@ -9,7 +9,7 @@ from typing import Optional
 from dataclasses import dataclass, asdict
 
 
-CONFIG_DIR = Path.home() / ".video-summarizer"
+CONFIG_DIR = Path.home() / ".vidsum"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 HISTORY_DIR = CONFIG_DIR / "history"  # 可被 --output-dir 覆写
 

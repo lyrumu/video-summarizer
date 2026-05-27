@@ -78,7 +78,7 @@ def select_llm() -> str:
             config.llm.provider = provider
             config.llm.api_key = api_key
             save_config(config)
-            console.print("[green]✅ API Key 已保存到 ~/.video-summarizer/config.json[/green]")
+            console.print("[green]✅ API Key 已保存到 ~/.vidsum/config.json[/green]")
         return provider
 
 
