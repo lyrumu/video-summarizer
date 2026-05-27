@@ -56,8 +56,12 @@ class WhisperEngine(ASREngine):
         compute_type = self.compute_type
 
         if device == "auto":
-            import torch
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            try:
+                import torch
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            except ImportError:
+                # torch 未安装（Windows 用户常见），默认 CPU
+                device = "cpu"
 
         if compute_type == "auto":
             compute_type = "float16" if device == "cuda" else "int8"
