@@ -52,6 +52,9 @@ class WhisperEngine(ASREngine):
         print(f"  ⏳ 正在初始化 Whisper 模型 ({self.model_size})，首次运行可能需要下载")
         print(f"     请耐心等待...\n")
 
+        # 压制 Windows 上 huggingface_hub 的 symlink 警告
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
         # 自动检测设备
         device = self.device
         compute_type = self.compute_type
@@ -76,12 +79,14 @@ class WhisperEngine(ASREngine):
                                    device: str,
                                    compute_type: str) -> "WhisperModel":
         """加载 Whisper 模型，国内用户自动回退到 hf-mirror.com"""
-        from faster_whisper import WhisperModel
-
+        # 先设环境变量再 import，确保 huggingface_hub 读到正确端点
         for attempt, endpoint in enumerate([None, "https://hf-mirror.com"]):
-            if attempt == 1:
-                print(f"  ⏳ 默认源下载失败，正在尝试国内镜像 hf-mirror.com...")
+            if endpoint is not None:
                 os.environ["HF_ENDPOINT"] = endpoint
+                if attempt == 1:
+                    print(f"  ⏳ 默认源下载失败，正在尝试国内镜像 hf-mirror.com...")
+
+            from faster_whisper import WhisperModel
 
             try:
                 return WhisperModel(
