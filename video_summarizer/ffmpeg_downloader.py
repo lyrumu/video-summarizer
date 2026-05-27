@@ -43,8 +43,8 @@ def _get_download_config() -> Optional[dict]:
 
     if system == "windows":
         return {
-            "url": "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z",
-            "archive_type": "7z",
+            "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+            "archive_type": "zip",
             "binary_names": ["ffmpeg.exe", "ffprobe.exe"],
         }
 
@@ -257,6 +257,35 @@ def _extract_windows(archive_path: Path, dest_dir: Path, config: dict) -> bool:
     return len(found) == len(binary_names)
 
 
+def _extract_zip(archive_path: Path, dest_dir: Path, config: dict) -> bool:
+    """从 .zip 中提取所有文件，递归搜索二进制文件（Windows BtbN 格式）。"""
+    import zipfile
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    binary_names = config["binary_names"]
+
+    with zipfile.ZipFile(archive_path, "r") as zf:
+        zf.extractall(path=dest_dir)
+
+    found = []
+    for name in binary_names:
+        matches = list(dest_dir.rglob(name))
+        if matches:
+            src = matches[0]
+            dst = dest_dir / name
+            if src != dst:
+                if dst.exists():
+                    dst.unlink()
+                shutil.move(str(src), str(dst))
+            found.append(name)
+
+    for item in list(dest_dir.iterdir()):
+        if item.is_dir():
+            shutil.rmtree(str(item))
+
+    return len(found) == len(binary_names)
+
+
 def _extract_macos_zip(archive_path: Path, dest_dir: Path, binary_name: str) -> bool:
     """从 .zip 中提取单个二进制（macOS evermeet.cx 格式）。"""
     import zipfile
@@ -375,21 +404,11 @@ def ensure_ffmpeg(progress_callback: Optional[Callable] = None) -> tuple[bool, s
     binary_names = config["binary_names"]
 
     try:
-        if config["archive_type"] == "7z":
-            # Windows
-            archive_path = CACHE_DIR / "ffmpeg.7z"
-            _download_file(config["url"], archive_path, progress_callback)
-            _report(progress_callback, None, "正在解压 (7z)...")
-            _extract_windows(archive_path, CACHE_DIR, config)
-            archive_path.unlink(missing_ok=True)
-
-        elif config["archive_type"] == "zip":
-            # macOS
-            urls = config["urls"]
-            for binary_name in urls:
-                archive_ext = "zip"
-                archive_path = CACHE_DIR / f"{binary_name}.{archive_ext}"
-                _download_file(urls[binary_name], archive_path, progress_callback)
+        if config.get("urls") and config["archive_type"] == "zip":
+            # macOS: 两个单独的 zip（ffmpeg.zip + ffprobe.zip）
+            for binary_name in config["urls"]:
+                archive_path = CACHE_DIR / f"{binary_name}.zip"
+                _download_file(config["urls"][binary_name], archive_path, progress_callback)
                 _report(progress_callback, None, f"正在解压 {binary_name}...")
                 if not _extract_macos_zip(archive_path, CACHE_DIR, binary_name):
                     archive_path.unlink(missing_ok=True)
@@ -402,6 +421,20 @@ def ensure_ffmpeg(progress_callback: Optional[Callable] = None) -> tuple[bool, s
             _download_file(config["url"], archive_path, progress_callback)
             _report(progress_callback, None, "正在解压 (tar.xz)...")
             _extract_linux(archive_path, CACHE_DIR, config)
+            archive_path.unlink(missing_ok=True)
+
+        else:
+            # Windows: 单个 zip/7z 包含两个二进制文件
+            ext_map = {"zip": "zip", "7z": "7z"}
+            ext = ext_map.get(config["archive_type"], "zip")
+            archive_path = CACHE_DIR / f"ffmpeg.{ext}"
+            _download_file(config["url"], archive_path, progress_callback)
+            if config["archive_type"] == "7z":
+                _report(progress_callback, None, "正在解压 (7z)...")
+                _extract_windows(archive_path, CACHE_DIR, config)
+            else:
+                _report(progress_callback, None, "正在解压 (zip)...")
+                _extract_zip(archive_path, CACHE_DIR, config)
             archive_path.unlink(missing_ok=True)
 
         # 设置可执行权限
