@@ -41,6 +41,8 @@ class AudioDownloader:
         ydl_opts = {
             # 只下载最佳音频流
             "format": "bestaudio/best",
+            # 指定 ffmpeg 位置（自动下载缓存）
+            "ffmpeg_location": str(Path.home() / ".vidsum" / "bin"),
             # 音频转码
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
